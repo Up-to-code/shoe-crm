@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { CalendarIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,7 @@ import { arSA } from "date-fns/locale"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { cairo } from "../app/fonts"
+import { addCustomer } from "@/app/actions/actions"
 
 interface CustomerFormProps {
   onSubmit: () => void
@@ -28,25 +29,20 @@ export default function CustomerForm({ onSubmit }: CustomerFormProps) {
   const [note, setNote] = useState("")
   const [time, setTime] = useState<Date>()
   const [comFrom, setComFrom] = useState("")
+  const [isPending, startTransition] = useTransition()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const finalType = type === "custom" ? customType : type
-    const response = await fetch("/api/customers", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    startTransition(async () => {
+      await addCustomer({
         name,
         phone,
         type: finalType,
         note,
-        time: time?.toISOString(),
+        time: time?.toISOString() || new Date().toISOString(),
         com_from: comFrom,
-      }),
-    })
-    if (response.ok) {
+      })
       setName("")
       setPhone("")
       setType("sale")
@@ -55,7 +51,7 @@ export default function CustomerForm({ onSubmit }: CustomerFormProps) {
       setTime(undefined)
       setComFrom("")
       onSubmit()
-    }
+    })
   }
 
   return (
@@ -137,8 +133,8 @@ export default function CustomerForm({ onSubmit }: CustomerFormProps) {
             <Label htmlFor="comFrom">مصدر المشتري</Label>
             <Input id="comFrom" value={comFrom} onChange={(e) => setComFrom(e.target.value)} />
           </div>
-          <Button type="submit" className="w-full">
-            إضافة المشتري
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? "جاري الإضافة..." : "إضافة المشتري"}
           </Button>
         </form>
       </CardContent>

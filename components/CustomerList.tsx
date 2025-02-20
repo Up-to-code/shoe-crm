@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import type { Customer } from "@/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { format } from "date-fns"
 import { arSA } from "date-fns/locale"
 import { cairo } from "../app/fonts"
+import { getCustomers } from "@/app/actions/actions"
 
 interface CustomerListProps {
   customers: Customer[]
@@ -21,20 +22,26 @@ interface CustomerListProps {
   onSearch: (query: string) => void
 }
 
-export default function CustomerList({
-  customers,
-  isLoading,
-  currentPage,
-  totalPages,
-  onPageChange,
-  onSearch,
-}: CustomerListProps) {
+export default function CustomerList({ customers, isLoading, currentPage, totalPages, onPageChange, onSearch }: CustomerListProps) {
   const [activeTab, setActiveTab] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [isPending, startTransition] = useTransition()
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    onSearch(searchQuery)
+    startTransition(async () => {
+      const result = await getCustomers(1, 10, searchQuery)
+      onPageChange(result.currentPage)
+      onSearch(searchQuery)
+    })
+  }
+
+  const handlePageChange = (page: number) => {
+    startTransition(async () => {
+      const result = await getCustomers(page, 10, searchQuery)
+      onPageChange(result.currentPage)
+      onSearch(searchQuery)
+    })
   }
 
   const renderCustomerList = (type: "all" | "sale" | "payment") => (
@@ -78,7 +85,9 @@ export default function CustomerList({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <Button type="submit">بحث</Button>
+            <Button type="submit" disabled={isPending}>
+              بحث
+            </Button>
           </div>
         </form>
       </CardHeader>
@@ -86,23 +95,23 @@ export default function CustomerList({
         <Tabs defaultValue="all" onValueChange={(value) => setActiveTab(value as "all" | "sale" | "payment")}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="all">الكل</TabsTrigger>
-            <TabsTrigger value="sale">بيع</TabsTrigger>
-            <TabsTrigger value="payment">شاري</TabsTrigger>
+            <TabsTrigger value="sale">المبيعات</TabsTrigger>
+            <TabsTrigger value="payment">المدفوعات</TabsTrigger>
           </TabsList>
-          <TabsContent value="all">{isLoading ? <p>جاري التحميل...</p> : renderCustomerList("all")}</TabsContent>
-          <TabsContent value="sale">{isLoading ? <p>جاري التحميل...</p> : renderCustomerList("sale")}</TabsContent>
+          <TabsContent value="all">{isPending ? <p>جاري التحميل...</p> : renderCustomerList("all")}</TabsContent>
+          <TabsContent value="sale">{isPending ? <p>جاري التحميل...</p> : renderCustomerList("sale")}</TabsContent>
           <TabsContent value="payment">
-            {isLoading ? <p>جاري التحميل...</p> : renderCustomerList("payment")}
+            {isPending ? <p>جاري التحميل...</p> : renderCustomerList("payment")}
           </TabsContent>
         </Tabs>
         <div className="flex justify-between items-center mt-4">
-          <Button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1 || isLoading}>
+          <Button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1 || isPending}>
             السابق
           </Button>
           <span>
             الصفحة {currentPage} من {totalPages}
           </span>
-          <Button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages || isLoading}>
+          <Button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || isPending}>
             التالي
           </Button>
         </div>
