@@ -4,10 +4,10 @@ import { cairo } from "./fonts"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "نظام إدارة علاقات العملاء لمتجر الأحذية",
-  description: "تطبيق لإدارة علاقات العملاء لمتجر الأحذية",
-    generator: 'v0.dev'
-}
+  title: "نظام إدارة علاقات العملاء للعقارات",
+  description:
+    "تطبيق متكامل لإدارة علاقات العملاء في مجال العقارات، يوفر أدوات متقدمة لتحسين تجربة العملاء وزيادة المبيعات.",
+};
 
 export default function RootLayout({
   children,
