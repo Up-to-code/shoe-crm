@@ -6,6 +6,7 @@ import CustomerList from "@/components/CustomerList"
 import { Button } from "@/components/ui/button"
 import type { Customer } from "@/types"
 import { cairo } from "./fonts"
+import { getCustomers } from "./actions/actions"
 
 export default function Home() {
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -17,12 +18,12 @@ export default function Home() {
 
   const fetchCustomers = useCallback(async (page: number, search = "") => {
     setIsLoading(true)
-    const res = await fetch(`/api/customers?page=${page}&limit=10&search=${encodeURIComponent(search)}`)
-    if (res.ok) {
-      const data = await res.json()
-      setCustomers(data.customers)
-      setCurrentPage(data.currentPage)
-      setTotalPages(data.totalPages)
+    const res = await getCustomers(page, 10, search)
+    if (res) {
+      
+      setCustomers(res.customers)
+      setCurrentPage(res.currentPage)
+      setTotalPages(res.totalPages)
     }
     setIsLoading(false)
   }, [])
